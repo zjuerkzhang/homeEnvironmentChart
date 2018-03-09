@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>家庭温湿度记录</title>
+	<script src="./javascripts/moment.min.js"></script>
+	<script src="./javascripts/Chart.js"></script>
+	<script src="./javascripts/utils.js"></script>
+	<script type="text/javascript">
+
+		fillSelectByFetchedDates();
+
+		function fillSelectByFetchedDates() {
+			var request = new XMLHttpRequest();
+			request.onreadystatechange = function (){
+				if (request.readyState === 4) {
+					if (request.status === 200 || request.status === 304 ) {
+						var dates = JSON.parse(request.responseText);
+						dates.sort();
+						//console.log(dates);
+						var selectObj = document.getElementById("select");
+						dates.forEach(function(element) {
+							var op = document.createElement("option");
+							op.text = element;
+							selectObj.options.add(op);
+						});
+						selectObj.options.item(dates.length-1).selected = "selected";
+						drawEnvironmentChart();
+					}
+				}
+			};
+			request.open('GET', './dates');
+			request.send();
+		}
+
+		function drawEnvironmentChart() {
+			var selectObj = document.getElementById("select");
+			var date = selectObj.options.item(selectObj.selectedIndex).text;
+			//console.log(date);
+			var request = new XMLHttpRequest();
+			request.onreadystatechange = function (){
+				if (request.readyState === 4) {
+					if (request.status === 200 || request.status === 304 ) {
+						var env_datas = JSON.parse(request.responseText);
+						//console.log(env_datas);
+						xData = Object.keys(env_datas.temperature).sort();
+						temp_data = xData.map(function(x) { return Number(env_datas.temperature[x]);});
+						humi_data = xData.map(function(x) { return Number(env_datas.humidity[x]);});
+						now = Date.now();
+						dateData = xData.map(function(x) {return moment(x, "HH:mm").toDate();});
+						//console.log(xData);
+						//console.log(temp_data);
+						//console.log(humi_data);
+						if (window.tempLine === undefined) {
+							window.tempLine = drawChart(document.getElementById("temperature"), dateData, temp_data,
+								"Time", "Celsius degree", "Temperature", window.chartColors.red);
+						}
+						else {
+							console.log("update temperature data");
+							window.tempLine.config.data.labels = dateData;
+							window.tempLine.config.data.datasets[0].data = temp_data;
+							window.tempLine.update();
+						}
+						if (window.humiLine === undefined) {
+							window.humiLine = drawChart(document.getElementById("humidity"), dateData, humi_data,
+								"Time", "%", "Humidity", window.chartColors.blue);
+						}
+						else {
+							console.log("update humidity data");
+							window.humiLine.config.data.labels = dateData;
+							window.humiLine.config.data.datasets[0].data = humi_data;
+							window.humiLine.update();
+						}
+					}
+				}
+			};
+			request.open('GET', './env_datas?date=' + date);
+			request.send();
+		}
+
+		function drawChart(canvasObj, xData, yData, xLabel, yLable, showTitle, lineColor) {
+			var color = Chart.helpers.color;
+			var config = {
+				type: 'line',
+				data: {
+					labels: xData,
+					datasets: [{
+						label: showTitle,
+						backgroundColor: lineColor,//color(window.chartColors.red).alpha(0.5).rgbString(),
+						borderColor: lineColor,
+						fill: false,
+						data: yData,
+					}]
+				},
+				options: {
+					title: {
+						text: showTitle
+					},
+					scales: {
+						xAxes: [{
+							type: 'time',
+							time: {
+								format: 'MM/DD/YYYY HH:mm',
+								// round: 'day'
+								tooltipFormat: 'hh:mm'
+							},
+							scaleLabel: {
+								display: true,
+								labelString: xLabel
+							}
+						}],
+						yAxes: [{
+							scaleLabel: {
+								display: true,
+								labelString: yLable
+							}
+						}]
+					},
+				}
+			};
+			var ctx = canvasObj.getContext('2d');
+			return (new Chart(ctx, config));
+		}
+	</script>
+	<style>
+		canvas {
+			-moz-user-select: none;
+			-webkit-user-select: none;
+			-ms-user-select: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div>
+		<b>选择日期: </b>
+		<select id="select" onchange="drawEnvironmentChart()"></select>
+	</div>
+	<div style="width:75%;">
+		<canvas id="temperature"></canvas>
+	</div>
+	<div style="width:75%;">
+		<canvas id="humidity"></canvas>
+	</div>
+	<br>
+	<br>
+
+</body>
+
+</html>

@@ -9,6 +9,9 @@ var index = require('./routes/index');
 var users = require('./routes/users');
 var dates = require('./routes/dates');
 var env_datas = require('./routes/env_datas');
+var monthes = require('./routes/monthes');
+var month_datas = require('./routes/month_datas');
+var trend = require('./routes/trend')
 
 var app = express();
 
@@ -28,6 +31,9 @@ app.use('/', index);
 app.use('/users', users);
 app.use('/dates', dates);
 app.use('/env_datas', env_datas);
+app.use('/monthes', monthes);
+app.use('/month_datas', month_datas);
+app.use('/trend', trend);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

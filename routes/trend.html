@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>家庭温湿度趋势图</title>
+	<script src="./javascripts/moment.min.js"></script>
+	<script src="./javascripts/Chart.js"></script>
+	<script src="./javascripts/utils.js"></script>
+	<script type="text/javascript">
+
+		fillSelectByFetchedDates();
+
+		function fillSelectByFetchedDates() {
+			var request = new XMLHttpRequest();
+			request.onreadystatechange = function (){
+				if (request.readyState === 4) {
+					if (request.status === 200 || request.status === 304 ) {
+						var monthes = JSON.parse(request.responseText);
+						monthes.sort(function(a, b) {
+							var aa = a.split('-').map(function(x) {return Number(x);});
+							var bb = b.split('-').map(function(x) {return Number(x);});
+							return (aa[0]*10+aa[1]) - (bb[0]*10+bb[1]);
+						});
+						//console.log(monthes);
+						var selectObj = document.getElementById("select");
+						monthes.forEach(function(element) {
+							var op = document.createElement("option");
+							op.text = element;
+							selectObj.options.add(op);
+						});
+						selectObj.options.item(monthes.length-1).selected = "selected";
+						drawEnvironmentChart();
+					}
+				}
+			};
+			request.open('GET', './monthes');
+			request.send();
+		}
+
+		function drawEnvironmentChart() {
+			var selectObj = document.getElementById("select");
+			var month = selectObj.options.item(selectObj.selectedIndex).text;
+			//console.log(month);
+			var request = new XMLHttpRequest();
+			request.onreadystatechange = function (){
+				if (request.readyState === 4) {
+					if (request.status === 200 || request.status === 304 ) {
+						var env_datas = JSON.parse(request.responseText);
+						//console.log(env_datas);
+						var humi_data = env_datas.humidity.sort(function(a, b) {
+						  var aa = a.date.split('-').map(function(x) {return Number(x);});
+						  var bb = b.date.split('-').map(function(x) {return Number(x);});
+						  return (aa[0]*1000+aa[1]*10+aa[2]) - (bb[0]*1000+bb[1]*10+bb[2]);
+						});
+						var temp_data = env_datas.temperature.sort(function(a, b) {
+						  var aa = a.date.split('-').map(function(x) {return Number(x);});
+						  var bb = b.date.split('-').map(function(x) {return Number(x);});
+						  return (aa[0]*1000+aa[1]*10+aa[2]) - (bb[0]*1000+bb[1]*10+bb[2]);
+						});
+						//console.log(humi_data);
+						//console.log(temp_data);
+						var xData = humi_data.map(function(obj) {
+							return obj.date;
+						})
+						.map(function(x) {return moment(x, "YYYY-M-D").toDate();});
+
+						var temp_high_data = temp_data.map(function(x) {
+							return Number(x.high);
+						});
+						var temp_low_data = temp_data.map(function(x) {
+							return Number(x.low);
+						});
+						var humi_high_data = humi_data.map(function(x) {
+							return Number(x.high);
+						});
+						var humi_low_data = humi_data.map(function(x) {
+							return Number(x.low);
+						});
+
+						//console.log(xData);
+						//console.log(temp_data);
+						//console.log(humi_data);
+						if (window.tempLine === undefined) {
+							yTempData = [
+								{
+									lableText: "Highest",
+									lineColor: window.chartColors.red,
+									dataSeries: temp_high_data
+								},
+								{
+									lableText: "Lowest",
+									lineColor: window.chartColors.blue,
+									dataSeries: temp_low_data
+								}
+							];
+							window.tempLine = drawChart(document.getElementById("temperature"), "Temperature", xData,
+								"Time", yTempData, "Celsius degree");
+						}
+						else {
+							console.log("update temperature data");
+							window.tempLine.config.data.labels = xData;
+							window.tempLine.config.data.datasets[0].data = temp_high_data;
+							window.tempLine.config.data.datasets[1].data = temp_low_data;
+							window.tempLine.update();
+						}
+						if (window.humiLine === undefined) {
+							yHumiData = [
+								{
+									lableText: "Highest",
+									lineColor: window.chartColors.red,
+									dataSeries: humi_high_data
+								},
+								{
+									lableText: "Lowest",
+									lineColor: window.chartColors.blue,
+									dataSeries: humi_low_data
+								}
+							];
+							window.humiLine = drawChart(document.getElementById("humidity"), "Humidity", xData,
+								"Time", yHumiData, "%");
+						}
+						else {
+							console.log("update humidity data");
+							window.humiLine.config.data.labels = xData;
+							window.humiLine.config.data.datasets[0].data = humi_high_data;
+							window.humiLine.config.data.datasets[1].data = humi_low_data;
+							window.humiLine.update();
+						}
+					}
+				}
+			};
+			request.open('GET', './month_datas?month=' + month);
+			request.send();
+		}
+
+		function drawChart(canvasObj, title, xData, xLabel, yDataset, yLable) {
+			var color = Chart.helpers.color;
+			var tmp_datasets = yDataset.map(function(entry) {
+				return {
+					label: entry.lableText,
+					backgroundColor: entry.lineColor,
+					borderColor: entry.lineColor,
+					fill: false,
+					data: entry.dataSeries
+				};
+			});
+			var config = {
+				type: 'line',
+				data: {
+					labels: xData,
+					datasets: tmp_datasets
+				},
+				options: {
+					title: {
+						text: title,
+						display: true
+					},
+					scales: {
+						xAxes: [{
+							type: 'time',
+							time: {
+								format: 'MM/DD/YYYY HH:mm',
+								// round: 'day'
+								tooltipFormat: 'YYYY-MM-DD',
+								unit: "day"
+							},
+							scaleLabel: {
+								display: true,
+								labelString: xLabel
+							}
+						}],
+						yAxes: [{
+							scaleLabel: {
+								display: true,
+								labelString: yLable
+							}
+						}]
+					},
+				}
+			};
+			var ctx = canvasObj.getContext('2d');
+			return (new Chart(ctx, config));
+		}
+	</script>
+	<style>
+		canvas {
+			-moz-user-select: none;
+			-webkit-user-select: none;
+			-ms-user-select: none;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>家庭温湿度趋势图</h1>
+	<div>
+		<b>选择月份: </b>
+		<select id="select" onchange="drawEnvironmentChart()"></select>
+	</div>
+	<div style="width:75%;">
+		<canvas id="temperature"></canvas>
+	</div>
+	<div style="width:75%;">
+		<canvas id="humidity"></canvas>
+	</div>
+	<br>
+	<br>
+
+</body>
+
+</html>

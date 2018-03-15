@@ -16,7 +16,11 @@
 				if (request.readyState === 4) {
 					if (request.status === 200 || request.status === 304 ) {
 						var dates = JSON.parse(request.responseText);
-						dates.sort();
+						dates.sort(function(a, b) {
+							var aa = a.split('-').map(function(x) {return Number(x);});
+							var bb = b.split('-').map(function(x) {return Number(x);});
+							return (aa[0]*1000+aa[1]*100+aa[2]) - (bb[0]*1000+bb[1]*100+bb[2]);
+						});
 						//console.log(dates);
 						var selectObj = document.getElementById("select");
 						dates.forEach(function(element) {
@@ -43,11 +47,10 @@
 					if (request.status === 200 || request.status === 304 ) {
 						var env_datas = JSON.parse(request.responseText);
 						//console.log(env_datas);
-						xData = Object.keys(env_datas.temperature).sort();
-						temp_data = xData.map(function(x) { return Number(env_datas.temperature[x]);});
-						humi_data = xData.map(function(x) { return Number(env_datas.humidity[x]);});
-						now = Date.now();
-						dateData = xData.map(function(x) {return moment(x, "HH:mm").toDate();});
+						var xData = Object.keys(env_datas.temperature).sort();
+						var temp_data = xData.map(function(x) { return Number(env_datas.temperature[x]);});
+						var humi_data = xData.map(function(x) { return Number(env_datas.humidity[x]);});
+						var dateData = xData.map(function(x) {return moment(x, "HH:mm").toDate();});
 						//console.log(xData);
 						//console.log(temp_data);
 						//console.log(humi_data);
@@ -136,6 +139,9 @@
 	<div>
 		<b>选择日期: </b>
 		<select id="select" onchange="drawEnvironmentChart()"></select>
+	</div>
+	<div>
+		<a href="./trend">月度趋势图</a>
 	</div>
 	<div style="width:75%;">
 		<canvas id="temperature"></canvas>

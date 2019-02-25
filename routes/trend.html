@@ -19,7 +19,7 @@
 						monthes.sort(function(a, b) {
 							var aa = a.split('-').map(function(x) {return Number(x);});
 							var bb = b.split('-').map(function(x) {return Number(x);});
-							return (aa[0]*10+aa[1]) - (bb[0]*10+bb[1]);
+							return (aa[0]*12+aa[1]) - (bb[0]*12+bb[1]);
 						});
 						//console.log(monthes);
 						var selectObj = document.getElementById("select");

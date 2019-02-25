@@ -19,7 +19,7 @@
 						dates.sort(function(a, b) {
 							var aa = a.split('-').map(function(x) {return Number(x);});
 							var bb = b.split('-').map(function(x) {return Number(x);});
-							return (aa[0]*1000+aa[1]*100+aa[2]) - (bb[0]*1000+bb[1]*100+bb[2]);
+							return ((aa[0]*12+aa[1])*31+aa[2]) - ((bb[0]*12+bb[1])*31+bb[2]);
 						});
 						//console.log(dates);
 						var selectObj = document.getElementById("select");
@@ -54,24 +54,28 @@
 						//console.log(xData);
 						//console.log(temp_data);
 						//console.log(humi_data);
+                        temp_title = "Temperature -- Max: " + Math.max(...temp_data) + "; Min: " + Math.min(...temp_data) 
+                        humi_title = "Humidity -- Max: " + Math.max(...humi_data) + "; Min: " + Math.min(...humi_data) 
 						if (window.tempLine === undefined) {
 							window.tempLine = drawChart(document.getElementById("temperature"), dateData, temp_data,
-								"Time", "Celsius degree", "Temperature", window.chartColors.red);
+								"Time", "Celsius degree", temp_title, window.chartColors.red);
 						}
 						else {
 							console.log("update temperature data");
 							window.tempLine.config.data.labels = dateData;
 							window.tempLine.config.data.datasets[0].data = temp_data;
+                            window.tempLine.config.data.datasets[0].label = temp_title;
 							window.tempLine.update();
 						}
 						if (window.humiLine === undefined) {
 							window.humiLine = drawChart(document.getElementById("humidity"), dateData, humi_data,
-								"Time", "%", "Humidity", window.chartColors.blue);
+								"Time", "%", humi_title, window.chartColors.blue);
 						}
 						else {
 							console.log("update humidity data");
 							window.humiLine.config.data.labels = dateData;
 							window.humiLine.config.data.datasets[0].data = humi_data;
+                            window.humiLine.config.data.datasets[0].label = humi_title;
 							window.humiLine.update();
 						}
 					}
@@ -97,6 +101,7 @@
 				},
 				options: {
 					title: {
+                        fontSize: 20,
 						text: showTitle
 					},
 					scales: {
